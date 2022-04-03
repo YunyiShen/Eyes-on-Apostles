@@ -1,0 +1,169 @@
+---
+title: "Eyes on Apostles Data Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    #css: css/mycosmo.css
+    logo: misc/WIlogo.png
+    orientation: columns
+    social: 
+    theme: cosmo
+    runtime: shiny
+# TODO: bring back social, figure out color problem
+---
+<style>                     
+.navbar {
+  background-color:#c5050c;
+  border-color:white;
+}
+
+.navbar-inverse {
+    background-color: #c5050c;
+    border-color: #c5050c;
+}
+
+.navbar-brand {
+  color:white!important;
+}
+
+
+
+</style>  
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(ggplot2)
+library(highcharter)
+library(sf)
+library(geojson)
+library(geojsonio)
+library(jsonlite)
+library(forecast) # to forcast detection rate
+library(dplyr)
+library(httr)
+library(shiny)
+library(leaflet)
+thm <- 
+  hc_theme(
+    colors = c("#1a6ecc", "#434348", "#90ed7d"),
+    chart = list(
+      backgroundColor = "transparent",
+      style = list(fontFamily = "Source Sans Pro")
+    ),
+    xAxis = list(
+      gridLineWidth = 1
+    )
+  )
+```
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+APIS_bound <- readLines("./maps/APIS_boundaries.geojson") %>%
+  Reduce(f = paste) %>%
+  fromJSON(simplifyVector = FALSE) %>%
+  as.json()
+presence_map <- read.csv("./data/PA_all_full.csv",row.names = 1)[-c(150:155),]
+spp_list <- colnames(presence_map)
+camera_loci <- read.csv("./data/CT_loci.csv")[-c(150:155),-c(6,7)]
+camera_loci$richness <- rowSums(presence_map)
+camera_loci$spplist<- sapply(camera_loci$name, function(site, sppmat){
+  paste(colnames(sppmat)[sppmat[site,]!=0], collapse = " <br> ")
+}, as.matrix(presence_map))
+```
+
+Column {.sidebar data-width=200}
+-----------------------------------------------------------------------
+```{r}
+# shiny inputs defined here
+selectInput("species", "Choose a species to show:",
+                  choices = colnames(presence_map), selected = "Bear_black")
+radioButtons("bubble","Showing", choices = list("Presence-absence" = FALSE,"Richness" = TRUE))
+selectInput("species", "Choose a species to compare:",
+                  choices = colnames(presence_map), selected = "Deer")
+radioButtons("comparing","Compare:", choices = list("True" = TRUE,"False" = FALSE))
+
+```
+
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Camera trap sites
+
+```{r}
+renderHighchart({
+species <- input$species
+apismap <- highchart(type = "map") %>%
+  hc_add_series(mapData = APIS_bound, showInLegend = FALSE)
+
+
+
+# https://jkunst.com/highcharter/articles/maps.html
+
+if(input$bubble){
+temp <- camera_loci[,c(4,3,5,6)]
+temp <- temp %>% geojson_json(lat = "lat", lon = "lon")
+
+apismap %>%
+ hc_add_series(
+    data = temp, 
+    lat = "lat",
+    lon = "lon",
+    dataLabels = list(enabled = F),
+    value = "richness",
+    type = "mapbubble",name = "Camera",
+    minSize = "10%",
+      maxSize = "100%",
+    tooltip = list(
+      pointFormat = "{point.name}"
+    )
+    ) %>%
+hc_mapNavigation(enabled = TRUE)
+
+
+
+}else{
+PA <- presence_map[,species] == 1
+species_presense <- camera_loci[PA,] %>%  geojson_json(lat = "lat", lon = "lon")
+
+species_absense <- camera_loci[!PA,] %>%  geojson_json(lat = "lat", lon = "lon")
+
+apismap %>%
+  hc_add_series(
+    data = species_absense,
+    type = "mappoint",
+    dataLabels = list(enabled = F),
+    name = paste(species,"absense"),
+    
+    tooltip = list(
+      pointFormat = "{point.name}: {point.properties.richness} species in total <br> {point.properties.spplist}"
+    )
+  ) %>% 
+  hc_add_series(
+    data = species_presense,
+    type = "mappoint",
+    dataLabels = list(enabled = F),
+    name = paste(species,"presense"),
+    tooltip = list(
+      pointFormat = "{point.name}: {point.properties.richness} species in total <br> {point.properties.spplist}"
+    )) %>% 
+   hc_mapNavigation(enabled = TRUE)
+  
+}
+})
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Relative Abundance Index (RAI)
+
+```{r}
+
+```
+
+### Temporial niche
+
+```{r}
+
+```
+
