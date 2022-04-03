@@ -1,0 +1,30 @@
+---
+title: "No refresh"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(highcharter)
+
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+highcharter::renderHighchart({
+  hcmap("countries/us/us-ca-all") %>%
+  hc_title(text = "California") %>% 
+  hc_subtitle(text = "You can use the same functions to modify your map!")
+  
+})
+```
+
+

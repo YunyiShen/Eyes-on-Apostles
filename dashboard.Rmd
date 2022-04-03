@@ -5,7 +5,7 @@ output:
     #css: css/mycosmo.css
     logo: misc/WIlogo.png
     orientation: columns
-    social: 
+    #social: 
     theme: cosmo
     runtime: shiny
 # TODO: bring back social, figure out color problem
@@ -33,15 +33,13 @@ output:
 library(flexdashboard)
 library(ggplot2)
 library(highcharter)
-library(sf)
-library(geojson)
 library(geojsonio)
 library(jsonlite)
 library(forecast) # to forcast detection rate
 library(dplyr)
-library(httr)
+
 library(shiny)
-library(leaflet)
+
 thm <- 
   hc_theme(
     colors = c("#1a6ecc", "#434348", "#90ed7d"),
@@ -53,21 +51,25 @@ thm <-
       gridLineWidth = 1
     )
   )
+
 ```
 
 ```{r global, include=FALSE}
 # load data in 'global' chunk so it can be shared by all users of the dashboard
-APIS_bound <- readLines("./maps/APIS_boundaries.geojson") %>%
+rm(list = ls())
+APIS_bound <- readLines("maps/APIS_boundaries.geojson") %>%
   Reduce(f = paste) %>%
   fromJSON(simplifyVector = FALSE) %>%
   as.json()
-presence_map <- read.csv("./data/PA_all_full.csv",row.names = 1)[-c(150:155),]
+presence_map <- read.csv("data/PA_all_full.csv",row.names = 1)[-c(150:155),]
 spp_list <- colnames(presence_map)
-camera_loci <- read.csv("./data/CT_loci.csv")[-c(150:155),-c(6,7)]
+camera_loci <- read.csv("data/CT_loci.csv")[-c(150:155),-c(6,7)]
 camera_loci$richness <- rowSums(presence_map)
 camera_loci$spplist<- sapply(camera_loci$name, function(site, sppmat){
   paste(colnames(sppmat)[sppmat[site,]!=0], collapse = " <br> ")
 }, as.matrix(presence_map))
+apismap <- highchart(type = "map") %>%
+  hc_add_series(mapData = APIS_bound, showInLegend = FALSE)
 ```
 
 Column {.sidebar data-width=200}
@@ -89,67 +91,67 @@ Column {data-width=400}
 
 ### Camera trap sites
 
-```{r}
-renderHighchart({
-species <- input$species
-apismap <- highchart(type = "map") %>%
-  hc_add_series(mapData = APIS_bound, showInLegend = FALSE)
+```{r results = 'asis'}
 
-
+output$map <- renderHighchart({
+  species <- input$species
 
 # https://jkunst.com/highcharter/articles/maps.html
-
-if(input$bubble){
-temp <- camera_loci[,c(4,3,5,6)]
-temp <- temp %>% geojson_json(lat = "lat", lon = "lon")
-
-apismap %>%
- hc_add_series(
-    data = temp, 
-    lat = "lat",
-    lon = "lon",
-    dataLabels = list(enabled = F),
-    value = "richness",
-    type = "mapbubble",name = "Camera",
-    minSize = "10%",
-      maxSize = "100%",
-    tooltip = list(
-      pointFormat = "{point.name}"
-    )
-    ) %>%
-hc_mapNavigation(enabled = TRUE)
-
-
-
-}else{
+ 
+ if(input$bubble){
+ temp <- camera_loci[,c(4,3,5,6)]
+ temp <- temp %>% geojson_json(lat = "lat", lon = "lon")
+ 
+ apismap <- apismap %>%
+  hc_add_series(
+     data = temp, 
+     lat = "lat",
+     lon = "lon",
+     dataLabels = list(enabled = F),
+     value = "richness",
+     type = "mapbubble",name = "Camera",
+     minSize = "10%",
+       maxSize = "100%",
+     tooltip = list(
+       pointFormat = "{point.name}"
+     )
+     ) %>%
+ hc_mapNavigation(enabled = TRUE)
+ 
+ 
+ 
+ }else{
 PA <- presence_map[,species] == 1
 species_presense <- camera_loci[PA,] %>%  geojson_json(lat = "lat", lon = "lon")
 
 species_absense <- camera_loci[!PA,] %>%  geojson_json(lat = "lat", lon = "lon")
 
-apismap %>%
-  hc_add_series(
-    data = species_absense,
-    type = "mappoint",
-    dataLabels = list(enabled = F),
-    name = paste(species,"absense"),
-    
-    tooltip = list(
-      pointFormat = "{point.name}: {point.properties.richness} species in total <br> {point.properties.spplist}"
-    )
-  ) %>% 
-  hc_add_series(
-    data = species_presense,
-    type = "mappoint",
-    dataLabels = list(enabled = F),
-    name = paste(species,"presense"),
-    tooltip = list(
-      pointFormat = "{point.name}: {point.properties.richness} species in total <br> {point.properties.spplist}"
-    )) %>% 
-   hc_mapNavigation(enabled = TRUE)
+ apismap <- apismap %>%
+   hc_add_series(
+     data = species_absense,
+     type = "mappoint",
+     dataLabels = list(enabled = F),
+     name = paste(species,"absense"),
+     tooltip = list(
+       pointFormat = "{point.name}: {point.properties.richness} species in total <br> {point.properties.spplist}"
+     )
+   ) %>% 
+   hc_add_series(
+     data = species_presense,
+     type = "mappoint",
+     dataLabels = list(enabled = F),
+     name = paste(species,"presense"),
+     tooltip = list(
+       pointFormat = "{point.name}: {point.properties.richness} species in total <br> {point.properties.spplist}"
+     )) %>% 
+    hc_mapNavigation(enabled = TRUE)
   
-}
+ }
+apismap
 })
+
+highchartOutput('map')
+
 ```
 
 Column {data-width=350}
