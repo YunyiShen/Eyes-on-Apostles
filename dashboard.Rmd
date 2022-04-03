@@ -77,7 +77,7 @@ Column {.sidebar data-width=200}
 selectInput("species", "Choose a species to show:",
                   choices = colnames(presence_map), selected = "Bear_black")
 radioButtons("bubble","Showing", choices = list("Presence-absence" = FALSE,"Richness" = TRUE))
-selectInput("species", "Choose a species to compare:",
+selectInput("species2", "Choose a species to compare:",
                   choices = colnames(presence_map), selected = "Deer")
 radioButtons("comparing","Compare:", choices = list("True" = TRUE,"False" = FALSE))
 
