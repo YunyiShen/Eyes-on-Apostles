@@ -4,27 +4,38 @@ output:
   flexdashboard::flex_dashboard:
     orientation: columns
     vertical_layout: fill
+    #runtime: shiny
     runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
 library(highcharter)
+library(htmlwidgets)
 
 ```
 
-Column {data-width=650}
+
+Column {.sidebar data-width=200}
+-----------------------------------------------------------------------
+```{r}
+# shiny inputs defined here
+selectInput("thename", "How do you want to call this State",
+                  choices = c("California", "CA"), selected = "California")
+```
+Column {data-width=450}
 -----------------------------------------------------------------------
 
 ### Chart A
 
 ```{r}
-highcharter::renderHighchart({
+#renderHighchart(expr = {
+renderHighchart({
   hcmap("countries/us/us-ca-all") %>%
-  hc_title(text = "California") %>% 
-  hc_subtitle(text = "You can use the same functions to modify your map!")
-  
-})
+  hc_title(text = input$thename) 
+})  
+#})
+
 ```
 
 
