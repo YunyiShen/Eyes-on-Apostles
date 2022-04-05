@@ -19,7 +19,7 @@ camera_loci$spplist<- sapply(camera_loci$name, function(site, sppmat){
   paste(colnames(sppmat)[sppmat[site,]!=0], collapse = " <br/> ")
 }, as.matrix(presence_map))
 APIS_map <- leaflet(APIS_bound) %>%
-  addPolygons(label = ~paste0(TRACT_ID)) 
+  addPolygons(label = ~paste(TRACT_ID,"island")) 
 
 ############### UI
 ui <- dashboardPage(
@@ -61,7 +61,7 @@ ui <- dashboardPage(
 ############### Server
 server <- function(input, output) { 
   
-  # mapping
+######## mapping #########
     output$apismap <- renderLeaflet({
       species <- input$species
     pal <- colorFactor(c("navy", "darkred"), domain = c(TRUE, FALSE))
@@ -78,7 +78,7 @@ server <- function(input, output) {
       APIS_map %>%
       addCircleMarkers(data = PA, radius = ~richness/1.5,
                       color = "darkred",
-                      popup = ~as.character(spplist), label = ~paste("richness:",richness)
+                      popup = ~as.character(spplist), label = ~paste(name,"richness:",richness)
         ) 
     }  else {
       APIS_map <- 
@@ -88,17 +88,7 @@ server <- function(input, output) {
                          popup = ~as.character(spplist), label = ~paste(name,input$species," presence:", PA_spp)
         ) 
     }
-    
-    
-    
-    
-    
-    
-    
-    
   })
-  output$RAI <- renderPlot({plot(1:10,1:10)})
-  
 }
 
 shinyApp(ui, server)
