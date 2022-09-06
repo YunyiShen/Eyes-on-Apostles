@@ -51,9 +51,14 @@ get_count <- function(spp1, compare, spp2) {
   }
 }
 
-get_RAI <- function(spp1, compare, spp2) {
+get_RAI <- function(spp1, compare, spp2, scaling = FALSE) {
   rawdata <- read.csv("data/CleanEvents.csv")
   rawdata <- rawdata[rawdata$Date != "", ]
+  occu_rate <- c(1,1)
+  if(scaling){
+    pa <- read.csv("./data/PA_all_full.csv", row.names = 1)
+    occu_rate <- colMeans(pa)[c(spp1,spp2)]
+  }
   date_all <- as.POSIXlt(rawdata$Date, format = "%m/%d/%Y", tz = "CDT")
   years <- as.numeric(format(date_all, "%Y"))
   julian_date <- as.numeric(format(date_all, "%j"))
@@ -71,13 +76,13 @@ get_RAI <- function(spp1, compare, spp2) {
   rm(date_all, years, julian_date)
   n_detections1 <- get_raw_counts(spp_1_data)
   # camera_days$spp1 <- n_detections1[as.character(camera_days$year)]
-  camera_days$spp1rai <- n_detections1[as.character(camera_days$year)] / camera_days$camera_days * 100
+  camera_days$spp1rai <- n_detections1[as.character(camera_days$year)] / camera_days$camera_days * 100 * occu_rate[1]
 
 
   if (compare) {
     n_detections2 <- get_raw_counts(spp_2_data)
     # camera_days$spp2 <- n_detections2[as.character(camera_days$year)]
-    camera_days$spp2rai <- n_detections2[as.character(camera_days$year)] / camera_days$camera_days * 100
+    camera_days$spp2rai <- n_detections2[as.character(camera_days$year)] / camera_days$camera_days * 100 * occu_rate[2]
 
     plot_data_rai <- melt(camera_days[, c(1, 3, 4)], id.vars = "year")
     spp_rai <- c("spp1rai" = spp1, "spp2rai" = spp2)

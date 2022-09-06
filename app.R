@@ -69,8 +69,10 @@ ui <- dashboardPage(
       tabItem(
         tabName = "RAItrend",
         h3("Detection trend"),
-        box(plotOutput("raitrend"), title = "RAI"),
-        box(plotOutput("ndet"), title = "number of detections")
+        box(plotOutput("raitrend"), 
+            checkboxInput("scaling", "scale RAI by occupancy rate", value = FALSE)
+            ,title = "RAI"),
+        box(plotOutput("ndet"), br(),br(),title = "number of detections")
       ),
       ### temporal tab ###
       tabItem(
@@ -142,7 +144,7 @@ server <- function(input, output) {
 
 
   output$raitrend <- renderPlot({
-    get_RAI(input$species, input$comparing, input$species2)
+    get_RAI(input$species, input$comparing, input$species2, input$scaling)
   })
   ######## number of detections #########
 
