@@ -1,2 +1,7 @@
 data/*
-rsconnect/*
+.Rproj.user
+.Rhistory
+
+*.Rproj
+
+rsconnect/shinyapps.io/*
